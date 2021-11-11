@@ -7,19 +7,25 @@ const vertex_shader_source: [*:0]const u8 =
     //specifie the pespective division which is useful for 4d corodinates
     \\#version 460 core
     \\layout (location = 0) in vec3 input_vetex_data;
-    \\
+    \\uniform vec4 vertex_color;
+    \\out vec4 fragment_color;
     \\void main(){
-    \\gl_Position = vec4(input_vetex_data.x,input_vetex_data.y,input_vetex_data.z,1.0);
+    \\gl_Position = vec4(input_vetex_data.xyz,1.0);
+    //output variable to dark-red// vec4(0.5, 0.0, 0.0, 1.0);
+    \\fragment_color = vertex_color;
     \\}
 ;
 
 const fragment_shader_source: [*:0]const u8 =
     //we specify the fragment shader output color using RGBA vec4
     \\#version 460 core
+    // input variable from vertex shader (same name and type)
+    \\in vec4 fragment_color;
+    //fragment shader color output
     \\out vec4 fragment_color_output;
     \\
     \\void main(){
-    \\fragment_color_output = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+    \\fragment_color_output = fragment_color;
     \\}
 ;
 
@@ -101,4 +107,13 @@ pub fn deinitRectangleBuffers() void {
     defer glDeleteBuffers(1, &vertex.vbo);
     defer glDeleteBuffers(1, &vertex.ebo);
     defer glDeleteVertexArrays(1, &vertex.vao); //1 is the vao id
+}
+pub fn setUniformInShader(shader_program: c_uint) void {
+    const time_value: f64 = glfwGetTime();
+    // for varing the green color continuously from green to black and again
+    const green_value = (std.math.sin(time_value) / 2) + 0.5;
+    const vertex_color_location: c_int = glGetUniformLocation(shader_program, "vertex_color");
+    //uninforms are useful for setting attributes that might change on every frame
+    //or for interchanging data between your application and your shaders
+    glUniform4f(vertex_color_location, 0.0, @floatCast(f32, green_value), 0.0, 1.0);
 }
