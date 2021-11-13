@@ -1,5 +1,5 @@
 const std = @import("std");
-usingnamespace @import("c_imports.zig");
+usingnamespace @import("cimports.zig");
 
 const vertex_shader_source: [*:0]const u8 =
     //gl_Position is a predefined variable that specifies the output of the

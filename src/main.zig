@@ -1,5 +1,5 @@
 const std = @import("std");
-usingnamespace @import("c_imports.zig");
+usingnamespace @import("cimports.zig");
 
 const WIDTH = 680;
 const HEIGHT = 640;
@@ -45,12 +45,12 @@ fn shaderCompileErrorHandling(shader_obj: c_uint) void {
     // check for shader errors
     var shader_compile_state: c_int = undefined;
     const info_log_size = 512;
-    var shader_info_log: [*:0]u8 = undefined;
+    var shader_info_log: [info_log_size:0]u8 = undefined;
 
     glGetShaderiv(shader_obj, GL_COMPILE_STATUS, &shader_compile_state);
 
     if (shader_compile_state == GL_FALSE) {
-        glGetShaderInfoLog(shader_obj, info_log_size, null, shader_info_log);
+        glGetShaderInfoLog(shader_obj, info_log_size, null, &shader_info_log);
         std.log.err("ERROR::SHADER::COMPILATION_FAILED : {s}\n", .{shader_info_log});
         std.debug.panic("Error compiling the shader object {}\nFix any syntax error in the shader_source", .{shader_obj});
     }
@@ -80,10 +80,10 @@ pub fn linkShaders(vertex_shader: c_uint, fragment_shader: c_uint) c_uint {
 fn linkShaderErrorHandling(shader_obj: c_uint) void {
     var shader_link_state: c_int = undefined;
     const info_log_size = 512;
-    var shader_link_info_log: [*:0]u8 = undefined;
+    var shader_link_info_log: [info_log_size:0]u8 = undefined;
     glGetProgramiv(shader_obj, GL_LINK_STATUS, &shader_link_state);
     if (shader_link_state == GL_FALSE) {
-        glGetProgramInfoLog(shader_obj, info_log_size, null, shader_link_info_log);
+        glGetProgramInfoLog(shader_obj, info_log_size, null, &shader_link_info_log);
         std.log.err("ERROR::SHADER::LINKING_FALIED : {s}\n", .{shader_link_info_log});
         std.debug.panic("Fix the output of the previous shader to match the input of current shader {}", .{shader_obj});
     }
