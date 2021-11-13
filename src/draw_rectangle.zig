@@ -8,11 +8,12 @@ const vertex_shader_source: [*:0]const u8 =
     \\#version 460 core
     \\layout (location = 0) in vec3 input_vetex_data;
     \\uniform vec4 vertex_color;
+    \\layout (location = 1) in vec3 input_vertex_color;
     \\out vec4 fragment_color;
     \\void main(){
     \\gl_Position = vec4(input_vetex_data.xyz,1.0);
     //output variable to dark-red// vec4(0.5, 0.0, 0.0, 1.0);
-    \\fragment_color = vertex_color;
+    \\fragment_color = vec4(input_vertex_color,1.0);
     \\}
 ;
 
@@ -29,12 +30,14 @@ const fragment_shader_source: [*:0]const u8 =
     \\}
 ;
 
-const rectangle_vertex_data = [4][3]f32{
-    //rectangle using index drawing
-    [_]f32{ 0.5, 0.5, 0.0 }, // top right}
-    [_]f32{ 0.5, -0.5, 0 }, // bottom right
-    [_]f32{ -0.5, -0.5, 0 }, // bottom left
-    [_]f32{ -0.5, 0.5, 0 }, // top left
+const rectangle_vertex_data = [4][6]f32{
+    //rectangle using index drawing with color data for each vertice
+    //first 3 vertices are for the point of the rectangle in 3d space
+    //the last 3 are for the rgb color for that point in space
+    [_]f32{ 0.5, 0.5, 0.0, 1.0, 0.0, 0.0 }, // top right
+    [_]f32{ 0.5, -0.5, 0.0, 0.0, 1.0, 0.0 }, // bottom right
+    [_]f32{ -0.5, -0.5, 0.0, 0.0, 0.0, 1.0 }, // bottom left
+    [_]f32{ -0.5, 0.5, 0.0, 1.0, 1.0, 0.0 }, // top left
 };
 
 const drawing_index_order = [2][3]u32{
@@ -76,20 +79,35 @@ pub fn storeVboOnGpu() c_uint {
 
 fn mapVertexDataToShaderAttribute() void {
     // layout(location = 0).in our vertex shader for our aPos attribute
-    const vertex_attribute_location = 0;
+    const vertex_data_attribute_location = 0;
     // our in attribute data had 3 values x,y,z and type  vec3
-    const vertex_attribute_size = 3;
+    const vertex_data_attribute_size = 3;
+    const vertex_color_attribute_size = 3;
     const vertex_data_type = GL_FLOAT;
     const normalize_vertex_data = GL_FALSE; // data is already in NDC
-    // specify the size of the consecutive column of v attributes it is
-    // call stride.NOTE we could specify 0 for opengl to detect the
-    // stide but this only works if our buffer dis tightly pack
-    const space_between_consecutive_vertex = vertex_attribute_size * @sizeOf(@TypeOf(rectangle_vertex_data[0][0]));
+    const size_of_vertex_datatype = @sizeOf(@TypeOf(rectangle_vertex_data[0][0]));
+    //specify the size of the consecutive columns of the input data
+    //if the vertex attributes receive data from the same input
+    //it is call stride.NOTE we could specify 0 for opengl to detect the
+    //stide but this only works if our buffer is tightly pack
+    //NOTE: here the + operator must have higher precedence over the * operator
+    //for correct result
+    const space_between_consecutive_vertex = (vertex_data_attribute_size + vertex_color_attribute_size) * size_of_vertex_datatype;
     // the offset of where the position begins in the buffer
     //in our case the offset is at 0 the begining of the array buffer
-    const position_data_start_offset = null; // @intToPtr(*c_void, 0x0);
-    glVertexAttribPointer(vertex_attribute_location, vertex_attribute_size, vertex_data_type, normalize_vertex_data, space_between_consecutive_vertex, position_data_start_offset);
-    glEnableVertexAttribArray(vertex_attribute_location);
+    const position_data_start_offset = null; // @intToPtr(*c_void, 0);
+    glVertexAttribPointer(vertex_data_attribute_location, vertex_data_attribute_size, vertex_data_type, normalize_vertex_data, space_between_consecutive_vertex, position_data_start_offset);
+    glEnableVertexAttribArray(vertex_data_attribute_location);
+
+    const vertex_color_attribute_location = 1;
+    //This is to give the offset of the color in the vertex buffer
+    //The color is at the 3 position .NOTE: counting from 0 for arrays
+    //and each of this vertices have a size of size_of_vertex_datatype
+    //meaning for each vertex our color data start from the 3rd data in the
+    //buffer .ie [0,1,2,3,4,5] color data start from 3 - 5 for each vertex
+    const position_color_start_offset = @intToPtr(*c_void, vertex_color_attribute_size * size_of_vertex_datatype);
+    glVertexAttribPointer(vertex_color_attribute_location, vertex_color_attribute_size, vertex_data_type, normalize_vertex_data, space_between_consecutive_vertex, position_color_start_offset);
+    glEnableVertexAttribArray(vertex_color_attribute_location);
 }
 const main = @import("main.zig");
 

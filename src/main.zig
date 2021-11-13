@@ -119,7 +119,7 @@ pub fn main() void {
         glBindVertexArray(vertex_vao);
         //updating the uniform requires using the shader_program because it
         //sets the uniform on the current active shader's shader_program
-        draw_rectangle.setUniformInShader(shader_program);
+        //draw_rectangle.setUniformInShader(shader_program);
         //        const vertex_data_start = 0;
         //        const number_of_vertices_to_draw = 3;
         //        glDrawArrays(GL_TRIANGLES, vertex_data_start, number_of_vertices_to_draw);
