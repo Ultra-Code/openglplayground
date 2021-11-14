@@ -1,35 +1,6 @@
 const std = @import("std");
 usingnamespace @import("cimports.zig");
 
-const vertex_shader_source: [*:0]const u8 =
-    //gl_Position is a predefined variable that specifies the output of the
-    //vertex shader and is of type vec4. The last co-ordinate of the vec4
-    //specifie the pespective division which is useful for 4d corodinates
-    \\#version 460 core
-    \\layout (location = 0) in vec3 input_vetex_data;
-    \\uniform vec4 vertex_color;
-    \\layout (location = 1) in vec3 input_vertex_color;
-    \\out vec4 fragment_color;
-    \\void main(){
-    \\gl_Position = vec4(input_vetex_data.xyz,1.0);
-    //output variable to dark-red// vec4(0.5, 0.0, 0.0, 1.0);
-    \\fragment_color = vec4(input_vertex_color,1.0);
-    \\}
-;
-
-const fragment_shader_source: [*:0]const u8 =
-    //we specify the fragment shader output color using RGBA vec4
-    \\#version 460 core
-    // input variable from vertex shader (same name and type)
-    \\in vec4 fragment_color;
-    //fragment shader color output
-    \\out vec4 fragment_color_output;
-    \\
-    \\void main(){
-    \\fragment_color_output = fragment_color;
-    \\}
-;
-
 const rectangle_vertex_data = [4][6]f32{
     //rectangle using index drawing with color data for each vertice
     //first 3 vertices are for the point of the rectangle in 3d space
@@ -108,17 +79,6 @@ fn mapVertexDataToShaderAttribute() void {
     const position_color_start_offset = @intToPtr(*c_void, vertex_color_attribute_size * size_of_vertex_datatype);
     glVertexAttribPointer(vertex_color_attribute_location, vertex_color_attribute_size, vertex_data_type, normalize_vertex_data, space_between_consecutive_vertex, position_color_start_offset);
     glEnableVertexAttribArray(vertex_color_attribute_location);
-}
-const main = @import("main.zig");
-
-pub fn rectangleShaderProgram() c_uint {
-    const vertex_shader = main.compileShader(GL_VERTEX_SHADER, vertex_shader_source);
-    const fragment_shader = main.compileShader(GL_FRAGMENT_SHADER, fragment_shader_source);
-
-    const shader_program = main.linkShaders(vertex_shader, fragment_shader);
-    defer glDeleteShader(vertex_shader);
-    defer glDeleteShader(fragment_shader);
-    return shader_program;
 }
 
 pub fn deinitRectangleBuffers() void {
