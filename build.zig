@@ -14,12 +14,17 @@ pub fn build(b: *std.build.Builder) void {
     const exe = b.addExecutable("opengl", "src/main.zig");
     exe.setTarget(target);
     exe.setBuildMode(mode);
+
     exe.addIncludeDir("/usr/include/GLFW/");
     exe.addIncludeDir("/usr/include/epoxy/");
     exe.addLibPath("/usr/lib/");
     exe.linkSystemLibrary("glfw3");
     exe.linkSystemLibrary("dl");
     exe.linkSystemLibrary("epoxy");
+
+    exe.addIncludeDir("deps/include/");
+    exe.addCSourceFile("deps/src/stb_image.c", &[_][]const u8{"-std=c17"});
+
     exe.install();
 
     const run_cmd = exe.run();
