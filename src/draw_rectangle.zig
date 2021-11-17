@@ -1,5 +1,12 @@
 const std = @import("std");
 usingnamespace @import("cimports.zig");
+//cordinates for sampling texture
+const texture_coordinates = [4][2]f32{
+    [_]f32{ 1.0, 1.0 }, //upper right
+    [_]f32{ 1.0, 0.0 }, //lower right
+    [_]f32{ 0.0, 0.0 }, //lower left
+    [_]f32{ 0.0, 1.0 }, //upper left
+};
 
 const rectangle_vertex_data = [4][6]f32{
     //rectangle using index drawing with color data for each vertice
@@ -16,39 +23,57 @@ const drawing_index_order = [2][3]u32{
     [_]u32{ 0, 3, 2 }, // second triangle
 };
 
-const Vertex = struct { vbo: c_uint, vao: c_uint, ebo: c_uint };
+const Vertex = struct { vbo: [2]c_uint, vao: c_uint, ebo: c_uint };
 
 var vertex: Vertex = undefined;
 
 pub fn storeVboOnGpu() c_uint {
-    const vo_id = 1;
+    const vo_num = 2;
     //vertex array object for holding vertex and glVertexAttribPointer
     //configurations
     var vao: c_uint = undefined;
-    glGenVertexArrays(vo_id, &vao);
+    glGenVertexArrays(vo_num, &vao);
 
-    var vbo: c_uint = undefined;
-    glGenBuffers(vo_id, &vbo);
+    var vbo: [2]c_uint = undefined;
+    glGenBuffers(vo_num, &vbo);
+    const texture_vbo: c_uint = vbo[0];
+    const rectangle_vbo: c_uint = vbo[1];
 
     glBindVertexArray(vao);
     //specify buffer type
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, rectangle_vbo);
     //copy the triangle_vetex_data into the vbo's memory with target type
     //GL_ARRAY_BUFFER
     glBufferData(GL_ARRAY_BUFFER, @sizeOf(@TypeOf(rectangle_vertex_data)), &rectangle_vertex_data, GL_STATIC_DRAW);
 
     var ebo: c_uint = undefined;
-    glGenBuffers(vo_id, &ebo);
+    glGenBuffers(1, &ebo);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, @sizeOf(@TypeOf(drawing_index_order)), &drawing_index_order, GL_STATIC_DRAW);
 
-    mapVertexDataToShaderAttribute();
+    mapRectangleVertexToAttribute();
+
+    glBindBuffer(GL_ARRAY_BUFFER, texture_vbo);
+    glBufferData(GL_ARRAY_BUFFER, @sizeOf(@TypeOf(texture_coordinates)), &texture_coordinates, GL_STATIC_DRAW);
+
+    mapTextureCoordinatesToAttribute();
+
     vertex = .{ .vbo = vbo, .vao = vao, .ebo = ebo };
     return vao;
 }
+fn mapTextureCoordinatesToAttribute() void {
+    const vertex_data_type = GL_FLOAT;
+    const normalize_vertex_data = GL_FALSE; // data is already in NDC
+    const size_of_vertex_datatype = @sizeOf(@TypeOf(texture_coordinates[0][0]));
+    const texture_coordinates_location = 2;
+    const texture_attribute_size = 2;
+    const space_between_consecutive_vertex_in_texture_coordinates = texture_attribute_size * size_of_vertex_datatype;
+    glVertexAttribPointer(texture_coordinates_location, texture_attribute_size, vertex_data_type, normalize_vertex_data, space_between_consecutive_vertex_in_texture_coordinates, null);
+    glEnableVertexAttribArray(texture_coordinates_location);
+}
 
-fn mapVertexDataToShaderAttribute() void {
+fn mapRectangleVertexToAttribute() void {
     // layout(location = 0).in our vertex shader for our aPos attribute
     const vertex_data_attribute_location = 0;
     // our in attribute data had 3 values x,y,z and type  vec3
@@ -82,7 +107,9 @@ fn mapVertexDataToShaderAttribute() void {
 }
 
 pub fn deinitRectangleBuffers() void {
-    defer glDeleteBuffers(1, &vertex.vbo);
+    for (vertex.vbo) |vbo| {
+        defer glDeleteBuffers(1, &vbo);
+    }
     defer glDeleteBuffers(1, &vertex.ebo);
     defer glDeleteVertexArrays(1, &vertex.vao); //1 is the vao id
 }
