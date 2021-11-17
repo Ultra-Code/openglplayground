@@ -43,6 +43,7 @@ fn processUserInput(window: *GLFWwindow) void {
 
 const shader = @import("shader.zig").Shader;
 const draw_rectangle = @import("draw_rectangle.zig");
+const texture = @import("texture.zig");
 
 pub fn main() !void {
     if (glfwInit() == GLFW_FALSE) {
@@ -62,11 +63,15 @@ pub fn main() !void {
     const vertex_vao = draw_rectangle.storeVboOnGpu();
     defer draw_rectangle.deinitRectangleBuffers();
 
+    const texture_obj = texture.initTexture();
+
     while (glfwWindowShouldClose(window) == GLFW_FALSE) {
         processUserInput(window);
 
         glClearColor(0.2, 0.3, 0.3, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        glBindTexture(GL_TEXTURE_2D, texture_obj);
 
         shader_program.useShader();
         glBindVertexArray(vertex_vao);
