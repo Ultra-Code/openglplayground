@@ -3,7 +3,7 @@ usingnamespace @import("cimports.zig");
 
 const ImageInfo = struct { width: i32, height: i32, number_of_color_channels: i32, data: *u8 };
 
-pub fn initTexture() c_uint {
+pub fn genTextureFromImage(image_path: []const u8, image_color: c_uint) c_uint {
     var texture_obj: c_uint = undefined;
     const number_of_textures = 1;
     glGenTextures(number_of_textures, &texture_obj);
@@ -14,7 +14,7 @@ pub fn initTexture() c_uint {
     setTextureZoomFiltering();
 
     // load and generate the texture
-    const image = loadTextureImage("assets/texture/container.jpg");
+    const image = loadTextureImage(image_path);
     defer stbi_image_free(image.data);
     //specifies the mipmap level for which we want to create a texture
     //the base level is 0
@@ -23,7 +23,7 @@ pub fn initTexture() c_uint {
     //7th & 8th  args specifies format and datatype of source image
     const texture_border = 0;
     //this associates the texture_obj with out texture image
-    glTexImage2D(GL_TEXTURE_2D, mipmap_level, GL_RGB, image.width, image.height, texture_border, GL_RGB, GL_UNSIGNED_BYTE, image.data);
+    glTexImage2D(GL_TEXTURE_2D, mipmap_level, @intCast(c_int, image_color), image.width, image.height, texture_border, image_color, GL_UNSIGNED_BYTE, image.data);
     //automatically generate all the required mipmaps for the currently bound texture
     glGenerateMipmap(GL_TEXTURE_2D);
     return texture_obj;
