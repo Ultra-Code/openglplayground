@@ -34,6 +34,12 @@ fn loadTextureImage(image_path: []const u8) ImageInfo {
     var height: i32 = undefined;
     var number_of_color_channels: i32 = undefined;
     const components_per_pixel = 0; //default 8 bit per pixel
+    //Opengl expects the 0.0 coordinate on the y-axis to be on the bottom side
+    //of the image, but images usually have 0.0 at the top of the y-axis.
+    //stb_image.h can flip the y-axis during image loading by calling
+    //stbi_set_flip_vertically_on_load(true) before loading any image
+    const TRUE = 1;
+    stbi_set_flip_vertically_on_load(TRUE);
     const data: ?*u8 = stbi_load(image_path.ptr, &width, &height, &number_of_color_channels, components_per_pixel);
     return .{ .width = width, .height = height, .number_of_color_channels = number_of_color_channels, .data = data orelse std.debug.panic(
         \\Failed to load texture at {0s} make sure that {0s} exist"
