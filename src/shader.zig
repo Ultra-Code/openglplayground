@@ -104,7 +104,7 @@ pub const Shader = struct {
     }
 
     pub fn setUniform(self: Shader, name: [:0]const u8, comptime T: type, value: T) void {
-        if (T == bool or T == c_int) {
+        if (T == bool or T == u8) {
             glUniform1i(glGetUniformLocation(self.program_id, name), @intCast(c_int, value));
         } else if (T == f32) {
             glUniform1f(glGetUniformLocation(self.program_id, name), value);
