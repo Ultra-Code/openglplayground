@@ -63,7 +63,15 @@ pub fn main() !void {
     const vertex_vao = draw_rectangle.storeVboOnGpu();
     defer draw_rectangle.deinitRectangleBuffers();
 
-    const texture_obj = texture.initTexture();
+    const container_texture_obj = texture.genTextureFromImage("assets/texture/container.jpg", GL_RGB);
+    //png images have alpha chanels so image color type is GL_RGBA
+    const smilelyface_texture_obj = texture.genTextureFromImage("assets/texture/awesomeface.png", GL_RGBA);
+
+    // tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
+    shader_program.useShader(); // don't forget to activate/use the shader before setting uniforms!
+    //set uniform to match the texture units in the fragment shader
+    shader_program.setUniform("container_texture_obj", u8, 0);
+    shader_program.setUniform("smilelyface_texture_obj", u8, 1);
 
     while (glfwWindowShouldClose(window) == GLFW_FALSE) {
         processUserInput(window);
@@ -71,7 +79,14 @@ pub fn main() !void {
         glClearColor(0.2, 0.3, 0.3, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glBindTexture(GL_TEXTURE_2D, texture_obj);
+        //location of a texture is  known as a texture unit.
+        //The default texture unit for a texture is 0 which is the default active
+        //texture unit if none is activated but can be manually activated with
+        glActiveTexture(GL_TEXTURE0); // activate texture unit first
+        glBindTexture(GL_TEXTURE_2D, container_texture_obj);
+
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, smilelyface_texture_obj);
 
         shader_program.useShader();
         glBindVertexArray(vertex_vao);
