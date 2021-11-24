@@ -76,11 +76,12 @@ pub const Shader = struct {
         if (shader_state == GL_FALSE) {
             glGetShaderInfoLog(shader_obj, info_log_size, null, &shader_info_log);
             if (shader_type == @enumToInt(ShaderType.vertex_shader)) {
-                std.log.err("ERROR::VERTEX::SHADER::COMPILATION_FAILED : {s}\n", .{shader_info_log});
+                std.log.err("ERROR::VERTEX::SHADER::COMPILATION_FAILED : {s}", .{shader_info_log});
             } else { //error_type == @enumToInt(ShaderType.fragment_shader)
-                std.log.err("ERROR::FRAGMENT::SHADER::COMPILATION_FAILED : {s}\n", .{shader_info_log});
+                std.log.err("ERROR::FRAGMENT::SHADER::COMPILATION_FAILED : {s}", .{shader_info_log});
             }
-            std.debug.panic("Error compiling the shader object {} Fix any syntax error in the shader_source", .{shader_obj});
+            std.log.err("Error compiling the shader object {} Fix any syntax error in the shader_source", .{shader_obj});
+            std.debug.panic("Failed to correctly compile shader file", .{});
         }
     }
 
@@ -91,11 +92,12 @@ pub const Shader = struct {
         glGetProgramiv(shader_obj, GL_LINK_STATUS, &shader_link_state);
         if (shader_link_state == GL_FALSE) {
             glGetProgramInfoLog(shader_obj, info_log_size, null, &shader_link_info_log);
-            std.log.err("ERROR::SHADER::PROGRAM::LINKING_FALIED : {s}\n", .{shader_link_info_log});
-            std.debug.panic(
-                \\Fix the output of the previous shader to match the input of current shader {}\n
-                \\And check and make sure there are no errors in your shaders\n
+            std.log.err("ERROR::SHADER::PROGRAM::LINKING_FALIED : {s}", .{shader_link_info_log});
+            std.log.err(
+                \\Fix the output of the previous shader to match the input of current shader {}
+                \\And check and make sure there are no errors in your shaders
             , .{shader_obj});
+            std.debug.panic("Failed to correctly link shader files", .{});
         }
     }
 
