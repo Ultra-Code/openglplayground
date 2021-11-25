@@ -20,24 +20,27 @@ pub const Shader = struct {
         const vertex_shader_file = try std.fs.cwd().openFile(vertex_path, .{ .read = true, .write = false });
         defer vertex_shader_file.close();
 
+        var vertex_code_buffer = try allocator.alloc(u8, try vertex_shader_file.getEndPos());
+        defer allocator.free(vertex_code_buffer);
+
+        const vertex_size = try vertex_shader_file.read(vertex_code_buffer);
+        const vertex_source = try std.cstr.addNullByte(allocator, vertex_code_buffer);
+
         const fragment_shader_file = try std.fs.cwd().openFile(fragment_path, .{ .read = true, .write = false });
         defer fragment_shader_file.close();
 
-        var vertex_source_code = try allocator.alloc(u8, try vertex_shader_file.getEndPos());
-        defer allocator.free(vertex_source_code);
+        var fragment_source_buffer = try allocator.alloc(u8, try fragment_shader_file.getEndPos());
+        defer allocator.free(fragment_source_buffer);
 
-        var fragment_source_code = try allocator.alloc(u8, try fragment_shader_file.getEndPos());
-        defer allocator.free(fragment_source_code);
+        const fragment_size = try fragment_shader_file.read(fragment_source_buffer);
+        const fragment_source = try std.cstr.addNullByte(allocator, fragment_source_buffer);
 
-        const vertex_size = try vertex_shader_file.read(vertex_source_code);
-        const fragment_size = try fragment_shader_file.read(fragment_source_code);
-
-        return Shader{ .program_id = shaderProgram(vertex_source_code, fragment_source_code) };
+        return Shader{ .program_id = shaderProgram(vertex_source, fragment_source) };
     }
 
-    fn shaderProgram(vertex_source: []const u8, fragment_source: []const u8) c_uint {
-        const vertex_shader = compileShader(GL_VERTEX_SHADER, vertex_source.ptr);
-        const fragment_shader = compileShader(GL_FRAGMENT_SHADER, fragment_source.ptr);
+    fn shaderProgram(vertex_source: [*:0]const u8, fragment_source: [*:0]const u8) c_uint {
+        const vertex_shader = compileShader(GL_VERTEX_SHADER, vertex_source);
+        const fragment_shader = compileShader(GL_FRAGMENT_SHADER, fragment_source);
 
         const shader_program = linkShaders(vertex_shader, fragment_shader);
         defer glDeleteShader(vertex_shader);
@@ -45,7 +48,7 @@ pub const Shader = struct {
         return shader_program;
     }
 
-    fn compileShader(shader_type: c_uint, shader_source: [*]const u8) c_uint {
+    fn compileShader(shader_type: c_uint, shader_source: [*:0]const u8) c_uint {
         // shader_type specify the type of the shader which could be
         // GL_VERTEX_SHADER or GL_FRAGMENT_SHADER ...
         const shader_obj: c_uint = glCreateShader(shader_type);
