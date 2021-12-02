@@ -90,6 +90,7 @@ pub fn main() !void {
 
         shader_program.useShader();
         glBindVertexArray(vertex_vao);
+        draw_rectangle.setTransformation(shader_program);
         //updating the uniform requires using the shader_program because it
         //sets the uniform on the current active shader's shader_program
         //draw_rectangle.setUniformInShader(shader_program);

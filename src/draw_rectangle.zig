@@ -1,5 +1,11 @@
 const std = @import("std");
 usingnamespace @import("cimports.zig");
+const Shader = @import("shader.zig").Shader;
+const glm = @import("glm.zig");
+const Vec4 = glm.Vec4;
+const Mat4 = glm.Mat4;
+const vec3 = glm.vec3;
+const vec4 = glm.vec4;
 //cordinates for sampling texture
 const texture_coordinates = [4][2]f32{
     [_]f32{ 1.0, 1.0 }, //upper right
@@ -113,12 +119,16 @@ pub fn deinitRectangleBuffers() void {
     defer glDeleteBuffers(1, &vertex.ebo);
     defer glDeleteVertexArrays(1, &vertex.vao); //1 is the vao id
 }
-pub fn setUniformInShader(shader_program: c_uint) void {
+
+pub fn setUniformInShader(shader_program: Shader) void {
     const time_value: f64 = glfwGetTime();
     // for varing the green color continuously from green to black and again
     const green_value = (std.math.sin(time_value) / 2) + 0.5;
-    const vertex_color_location: c_int = glGetUniformLocation(shader_program, "vertex_color");
-    //uninforms are useful for setting attributes that might change on every frame
-    //or for interchanging data between your application and your shaders
-    glUniform4f(vertex_color_location, 0.0, @floatCast(f32, green_value), 0.0, 1.0);
+    shader_program.setUniform("vertex_color", Vec4, vec4(0.0, @floatCast(f32, green_value), 0.0, 1.0));
+}
+pub fn setTransformation(shader_program: Shader) void {
+    const translation = glm.translation(vec3(0.5, -0.5, 0.0));
+    const rotation = glm.rotation(@floatCast(f32, glfwGetTime()), vec3(0.0, 0.0, 1.0));
+    const transformation = translation.matmul(rotation);
+    shader_program.setUniform("transformation", Mat4, transformation);
 }
