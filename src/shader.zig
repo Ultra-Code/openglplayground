@@ -1,5 +1,8 @@
 const std = @import("std");
 usingnamespace @import("cimports.zig");
+const glm = @import("glm.zig");
+const Mat4 = glm.Mat4;
+const Vec4 = glm.Vec4;
 
 pub fn getMaximumNumberOfVertexAttributes() void {
     var number_of_attributes: c_int = undefined;
@@ -110,11 +113,22 @@ pub const Shader = struct {
         glUseProgram(self.program_id);
     }
 
+    ///uninforms are useful for setting attributes that might change on every frame
+    ///or for interchanging data between your application and your shaders
     pub fn setUniform(self: Shader, name: [:0]const u8, comptime T: type, value: T) void {
         if (T == bool or T == u8) {
             glUniform1i(glGetUniformLocation(self.program_id, name), @intCast(c_int, value));
         } else if (T == f32) {
             glUniform1f(glGetUniformLocation(self.program_id, name), value);
+        } else if (T == Vec4) {
+            glUniform4f(glGetUniformLocation(self.program_id, name), value.val[0], value.val[1], value.val[2], value.val[3]);
+        } else if (T == Mat4) {
+            const number_of_matrices = 1;
+            const transpose_matrices = GL_FALSE;
+            const matrix_data = &value.vals[0][0];
+            glUniformMatrix4fv(glGetUniformLocation(self.program_id, name), number_of_matrices, transpose_matrices, matrix_data);
+        } else {
+            @compileError("Error: Setting glsl uniform with your specified type T is not supported");
         }
     }
 };
