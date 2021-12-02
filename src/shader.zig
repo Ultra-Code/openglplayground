@@ -20,22 +20,24 @@ pub const Shader = struct {
         const vertex_shader_file = try std.fs.cwd().openFile(vertex_path, .{ .read = true, .write = false });
         defer vertex_shader_file.close();
 
-        var vertex_code_buffer = try allocator.alloc(u8, try vertex_shader_file.getEndPos());
-        defer allocator.free(vertex_code_buffer);
+        var vertex_source_buffer = try std.cstr.addNullByte(allocator, slice: {
+            break :slice try allocator.alloc(u8, try vertex_shader_file.getEndPos());
+        });
+        defer allocator.free(vertex_source_buffer);
 
-        const vertex_size = try vertex_shader_file.read(vertex_code_buffer);
-        const vertex_source = try std.cstr.addNullByte(allocator, vertex_code_buffer);
+        const vertex_size = try vertex_shader_file.read(vertex_source_buffer);
 
         const fragment_shader_file = try std.fs.cwd().openFile(fragment_path, .{ .read = true, .write = false });
         defer fragment_shader_file.close();
 
-        var fragment_source_buffer = try allocator.alloc(u8, try fragment_shader_file.getEndPos());
+        var fragment_source_buffer = try std.cstr.addNullByte(allocator, slice: {
+            break :slice try allocator.alloc(u8, try fragment_shader_file.getEndPos());
+        });
         defer allocator.free(fragment_source_buffer);
 
         const fragment_size = try fragment_shader_file.read(fragment_source_buffer);
-        const fragment_source = try std.cstr.addNullByte(allocator, fragment_source_buffer);
 
-        return Shader{ .program_id = shaderProgram(vertex_source, fragment_source) };
+        return Shader{ .program_id = shaderProgram(vertex_source_buffer, fragment_source_buffer) };
     }
 
     fn shaderProgram(vertex_source: [*:0]const u8, fragment_source: [*:0]const u8) c_uint {
