@@ -1,5 +1,5 @@
 const std = @import("std");
-usingnamespace @import("cimports.zig");
+const c = @import("cimports.zig");
 const Shader = @import("shader.zig").Shader;
 const glm = @import("glm.zig");
 const Vec4 = glm.Vec4;
@@ -35,33 +35,33 @@ var vertex: Vertex = undefined;
 
 pub fn storeVboOnGpu() c_uint {
     const vo_num = 2;
-    //vertex array object for holding vertex and glVertexAttribPointer
+    //vertex array object for holding vertex and c.glVertexAttribPointer
     //configurations
     var vao: c_uint = undefined;
-    glGenVertexArrays(vo_num, &vao);
+    c.glGenVertexArrays(vo_num, &vao);
 
     var vbo: [2]c_uint = undefined;
-    glGenBuffers(vo_num, &vbo);
+    c.glGenBuffers(vo_num, &vbo);
     const texture_vbo: c_uint = vbo[0];
     const rectangle_vbo: c_uint = vbo[1];
 
-    glBindVertexArray(vao);
+    c.glBindVertexArray(vao);
     //specify buffer type
-    glBindBuffer(GL_ARRAY_BUFFER, rectangle_vbo);
+    c.glBindBuffer(c.GL_ARRAY_BUFFER, rectangle_vbo);
     //copy the triangle_vetex_data into the vbo's memory with target type
-    //GL_ARRAY_BUFFER
-    glBufferData(GL_ARRAY_BUFFER, @sizeOf(@TypeOf(rectangle_vertex_data)), &rectangle_vertex_data, GL_STATIC_DRAW);
+    //c.GL_ARRAY_BUFFER
+    c.glBufferData(c.GL_ARRAY_BUFFER, @sizeOf(@TypeOf(rectangle_vertex_data)), &rectangle_vertex_data, c.GL_STATIC_DRAW);
 
     var ebo: c_uint = undefined;
-    glGenBuffers(1, &ebo);
+    c.glGenBuffers(1, &ebo);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, @sizeOf(@TypeOf(drawing_index_order)), &drawing_index_order, GL_STATIC_DRAW);
+    c.glBindBuffer(c.GL_ELEMENT_ARRAY_BUFFER, ebo);
+    c.glBufferData(c.GL_ELEMENT_ARRAY_BUFFER, @sizeOf(@TypeOf(drawing_index_order)), &drawing_index_order, c.GL_STATIC_DRAW);
 
     mapRectangleVertexToAttribute();
 
-    glBindBuffer(GL_ARRAY_BUFFER, texture_vbo);
-    glBufferData(GL_ARRAY_BUFFER, @sizeOf(@TypeOf(texture_coordinates)), &texture_coordinates, GL_STATIC_DRAW);
+    c.glBindBuffer(c.GL_ARRAY_BUFFER, texture_vbo);
+    c.glBufferData(c.GL_ARRAY_BUFFER, @sizeOf(@TypeOf(texture_coordinates)), &texture_coordinates, c.GL_STATIC_DRAW);
 
     mapTextureCoordinatesToAttribute();
 
@@ -69,14 +69,14 @@ pub fn storeVboOnGpu() c_uint {
     return vao;
 }
 fn mapTextureCoordinatesToAttribute() void {
-    const vertex_data_type = GL_FLOAT;
-    const normalize_vertex_data = GL_FALSE; // data is already in NDC
+    const vertex_data_type = c.GL_FLOAT;
+    const normalize_vertex_data = c.GL_FALSE; // data is already in NDC
     const size_of_vertex_datatype = @sizeOf(@TypeOf(texture_coordinates[0][0]));
     const texture_coordinates_location = 2;
     const texture_attribute_size = 2;
     const space_between_consecutive_vertex_in_texture_coordinates = texture_attribute_size * size_of_vertex_datatype;
-    glVertexAttribPointer(texture_coordinates_location, texture_attribute_size, vertex_data_type, normalize_vertex_data, space_between_consecutive_vertex_in_texture_coordinates, null);
-    glEnableVertexAttribArray(texture_coordinates_location);
+    c.glVertexAttribPointer(texture_coordinates_location, texture_attribute_size, vertex_data_type, normalize_vertex_data, space_between_consecutive_vertex_in_texture_coordinates, null);
+    c.glEnableVertexAttribArray(texture_coordinates_location);
 }
 
 fn mapRectangleVertexToAttribute() void {
@@ -85,8 +85,8 @@ fn mapRectangleVertexToAttribute() void {
     // our in attribute data had 3 values x,y,z and type  vec3
     const vertex_data_attribute_size = 3;
     const vertex_color_attribute_size = 3;
-    const vertex_data_type = GL_FLOAT;
-    const normalize_vertex_data = GL_FALSE; // data is already in NDC
+    const vertex_data_type = c.GL_FLOAT;
+    const normalize_vertex_data = c.GL_FALSE; // data is already in NDC
     const size_of_vertex_datatype = @sizeOf(@TypeOf(rectangle_vertex_data[0][0]));
     //specify the size of the consecutive columns of the input data
     //if the vertex attributes receive data from the same input
@@ -98,8 +98,8 @@ fn mapRectangleVertexToAttribute() void {
     // the offset of where the position begins in the buffer
     //in our case the offset is at 0 the begining of the array buffer
     const position_data_start_offset = null; // @intToPtr(*c_void, 0);
-    glVertexAttribPointer(vertex_data_attribute_location, vertex_data_attribute_size, vertex_data_type, normalize_vertex_data, space_between_consecutive_vertex, position_data_start_offset);
-    glEnableVertexAttribArray(vertex_data_attribute_location);
+    c.glVertexAttribPointer(vertex_data_attribute_location, vertex_data_attribute_size, vertex_data_type, normalize_vertex_data, space_between_consecutive_vertex, position_data_start_offset);
+    c.glEnableVertexAttribArray(vertex_data_attribute_location);
 
     const vertex_color_attribute_location = 1;
     //This is to give the offset of the color in the vertex buffer
@@ -107,28 +107,28 @@ fn mapRectangleVertexToAttribute() void {
     //and each of this vertices have a size of size_of_vertex_datatype
     //meaning for each vertex our color data start from the 3rd data in the
     //buffer .ie [0,1,2,3,4,5] color data start from 3 - 5 for each vertex
-    const position_color_start_offset = @intToPtr(*c_void, vertex_color_attribute_size * size_of_vertex_datatype);
-    glVertexAttribPointer(vertex_color_attribute_location, vertex_color_attribute_size, vertex_data_type, normalize_vertex_data, space_between_consecutive_vertex, position_color_start_offset);
-    glEnableVertexAttribArray(vertex_color_attribute_location);
+    const position_color_start_offset = @intToPtr(*anyopaque, vertex_color_attribute_size * size_of_vertex_datatype);
+    c.glVertexAttribPointer(vertex_color_attribute_location, vertex_color_attribute_size, vertex_data_type, normalize_vertex_data, space_between_consecutive_vertex, position_color_start_offset);
+    c.glEnableVertexAttribArray(vertex_color_attribute_location);
 }
 
 pub fn deinitRectangleBuffers() void {
     for (vertex.vbo) |vbo| {
-        defer glDeleteBuffers(1, &vbo);
+        defer c.glDeleteBuffers(1, &vbo);
     }
-    defer glDeleteBuffers(1, &vertex.ebo);
-    defer glDeleteVertexArrays(1, &vertex.vao); //1 is the vao id
+    defer c.glDeleteBuffers(1, &vertex.ebo);
+    defer c.glDeleteVertexArrays(1, &vertex.vao); //1 is the vao id
 }
 
 pub fn setUniformInShader(shader_program: Shader) void {
-    const time_value: f64 = glfwGetTime();
+    const time_value: f64 = c.glfwGetTime();
     // for varing the green color continuously from green to black and again
     const green_value = (std.math.sin(time_value) / 2) + 0.5;
     shader_program.setUniform("vertex_color", Vec4, vec4(0.0, @floatCast(f32, green_value), 0.0, 1.0));
 }
 pub fn setTransformation(shader_program: Shader) void {
     const translation = glm.translation(vec3(0.5, -0.5, 0.0));
-    const rotation = glm.rotation(@floatCast(f32, glfwGetTime()), vec3(0.0, 0.0, 1.0));
+    const rotation = glm.rotation(@floatCast(f32, c.glfwGetTime()), vec3(0.0, 0.0, 1.0));
     const transformation = translation.matmul(rotation);
     shader_program.setUniform("transformation", Mat4, transformation);
 }
