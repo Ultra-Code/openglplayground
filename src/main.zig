@@ -46,7 +46,7 @@ fn processUserInput(window: *c.GLFWwindow) void {
 }
 
 const shader = @import("shader.zig").Shader;
-const draw_rectangle = @import("draw_rectangle.zig");
+const draw_box = @import("draw_box.zig");
 const texture = @import("texture.zig");
 
 pub fn main() !void {
@@ -64,8 +64,8 @@ pub fn main() !void {
     const shader_program = try shader.init(allocator, "shaders/rectangle.vert", "shaders/rectangle.frag");
     defer c.glDeleteProgram(shader_program.program_id);
 
-    const vertex_vao = draw_rectangle.storeVboOnGpu();
-    defer draw_rectangle.deinitRectangleBuffers();
+    const vertex_vao = draw_box.store3dBoxOnGpu();
+    defer draw_box.deinit3dBoxBuffers();
 
     const container_texture_obj = texture.genTextureFromImage("assets/texture/container.jpg", c.GL_RGB);
     //png images have alpha chanels so image color type is GL_RGBA
@@ -94,15 +94,12 @@ pub fn main() !void {
 
         shader_program.useShader();
         c.glBindVertexArray(vertex_vao);
-        draw_rectangle.setTransformation(shader_program);
-        //updating the uniform requires using the shader_program because it
-        //sets the uniform on the current active shader's shader_program
-        //draw_rectangle.setUniformInShader(shader_program);
-        //const vertex_data_start = 0;
-        //const number_of_vertices_to_draw = 3;
-        //c.glDrawArrays(c.GL_TRIANGLES, vertex_data_start, number_of_vertices_to_draw);
-        const number_of_indices_to_draw = 6;
-        c.glDrawElements(c.GL_TRIANGLES, number_of_indices_to_draw, c.GL_UNSIGNED_INT, null);
+        draw_box.rotate3dBox(shader_program);
+        const vertex_data_start = 0;
+        const number_of_vertices_to_draw = 36;
+        c.glDrawArrays(c.GL_TRIANGLES, vertex_data_start, number_of_vertices_to_draw);
+        // const number_of_indices_to_draw = 6;
+        // c.glDrawElements(c.GL_TRIANGLES, number_of_indices_to_draw, c.GL_UNSIGNED_INT, null);
 
         c.glfwSwapBuffers(window);
         c.glfwPollEvents();
