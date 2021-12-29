@@ -319,3 +319,7 @@ pub fn ortho(left: f32, right: f32, bottom: f32, top: f32, znear: f32, zfar: f32
         },
     };
 }
+
+pub fn radian(angle: f32) f32 {
+    return (angle / 180) * std.math.pi;
+}
