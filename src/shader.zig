@@ -67,6 +67,9 @@ pub const Shader = struct {
         c.glAttachShader(shader_program_obj, fragment_shader);
         c.glLinkProgram(shader_program_obj);
         checkShaderLinkErrors(shader_program_obj);
+        // Always detach shaders after a successful link.
+        c.glDetachShader(shader_program_obj, vertex_shader);
+        c.glDetachShader(shader_program_obj, fragment_shader);
         return shader_program_obj;
     }
 
@@ -81,26 +84,29 @@ pub const Shader = struct {
             c.glGetShaderInfoLog(shader_obj, info_log_size, null, &shader_info_log);
             if (shader_type == @enumToInt(ShaderType.vertex_shader)) {
                 std.log.err("ERROR::VERTEX::SHADER::COMPILATION_FAILED : {s}", .{shader_info_log});
-            } else { //error_type == @enumToInt(ShaderType.fragment_shader)
+            } else {
                 std.log.err("ERROR::FRAGMENT::SHADER::COMPILATION_FAILED : {s}", .{shader_info_log});
             }
+            // We don't need the shader anymore.
+            c.glDeleteShader(shader_obj);
             std.log.err("Error compiling the shader object {} Fix any syntax error in the shader_source", .{shader_obj});
             std.debug.panic("Failed to correctly compile shader file", .{});
         }
     }
 
-    fn checkShaderLinkErrors(shader_obj: c_uint) void {
+    fn checkShaderLinkErrors(program_obj: c_uint) void {
         var shader_link_state: c_int = undefined;
         const info_log_size = 512;
         var shader_link_info_log: [info_log_size:0]u8 = undefined;
-        c.glGetProgramiv(shader_obj, c.GL_LINK_STATUS, &shader_link_state);
+        c.glGetProgramiv(program_obj, c.GL_LINK_STATUS, &shader_link_state);
         if (shader_link_state == c.GL_FALSE) {
-            c.glGetProgramInfoLog(shader_obj, info_log_size, null, &shader_link_info_log);
+            c.glGetProgramInfoLog(program_obj, info_log_size, null, &shader_link_info_log);
             std.log.err("ERROR::SHADER::PROGRAM::LINKING_FALIED : {s}", .{shader_link_info_log});
             std.log.err(
                 \\Fix the output of the previous shader to match the input of current shader {}
                 \\And check and make sure there are no errors in your shaders
-            , .{shader_obj});
+            , .{program_obj});
+            c.glDeleteProgram(program_obj);
             std.debug.panic("Failed to correctly link shader files", .{});
         }
     }
