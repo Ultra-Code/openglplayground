@@ -88,12 +88,9 @@ fn mapRectangleVertexToAttribute() void {
     const vertex_data_type = c.GL_FLOAT;
     const normalize_vertex_data = c.GL_FALSE; // data is already in NDC
     const size_of_vertex_datatype = @sizeOf(@TypeOf(rectangle_vertex_data[0][0]));
-    //specify the size of the consecutive columns of the input data
-    //if the vertex attributes receive data from the same input
-    //it is call stride.NOTE we could specify 0 for opengl to detect the
-    //stide but this only works if our buffer is tightly pack
-    //NOTE: here the + operator must have higher precedence over the * operator
-    //for correct result
+    //specify the size of the consecutive columns of the input data.If the vertex attributes receive data from the same input
+    //The consecutive spaces is call stride.NOTE we could specify 0 for opengl to detect the stide but this only works if our buffer is tightly pack
+    //NOTE: here the + operator must have higher precedence over the * operator for correct result
     const space_between_consecutive_vertex = (vertex_data_attribute_size + vertex_color_attribute_size) * size_of_vertex_datatype;
     // the offset of where the position begins in the buffer
     //in our case the offset is at 0 the begining of the array buffer
@@ -131,4 +128,22 @@ pub fn setTransformation(shader_program: Shader) void {
     const rotation = glm.rotation(@floatCast(f32, c.glfwGetTime()), vec3(0.0, 0.0, 1.0));
     const transformation = translation.matmul(rotation);
     shader_program.setUniform("transformation", Mat4, transformation);
+}
+
+pub fn set3dTransformatin(shader_program: Shader) void {
+    //rotate the local space to the world space
+    const model = glm.rotation(glm.radian(-55.0), vec3(1.0, 0.0, 0.0));
+    //move the world space backward into to the view space along the -z plane
+    const view_backward = glm.translation(vec3(0.0, 0.0, -3.0));
+    //project our view space to clip space along the 45* fov
+    const perspective_width = 800.0;
+    const perspective_height = 600.0;
+    const aspect_ratio = perspective_width / perspective_height;
+    const near_of_fustrum = 0.1;
+    const far_of_fustrum = 100.0;
+    const projection = glm.perspective(45.0, aspect_ratio, near_of_fustrum, far_of_fustrum);
+    //set uniforms in vertex shader
+    shader_program.setUniform("model", Mat4, model);
+    shader_program.setUniform("view", Mat4, view_backward);
+    shader_program.setUniform("projection", Mat4, projection);
 }
