@@ -61,8 +61,8 @@ var vertex: Vertex = undefined;
 
 pub fn store3dBoxOnGpu() c_uint {
     const vo_num = 1;
-    //vertex array object for holding vertex and c.glVertexAttribPointer
-    //configurations
+    //vertex array object for holding vertex and c.glVertexAttribPointer configurations
+    //set up vertex data (and buffer(s))
     var vao: c_uint = undefined;
     c.glGenVertexArrays(vo_num, &vao);
 
@@ -75,13 +75,14 @@ pub fn store3dBoxOnGpu() c_uint {
     //copy the vertices_of_3D_box into the vbo's memory with target type c.GL_ARRAY_BUFFER
     c.glBufferData(c.GL_ARRAY_BUFFER, @sizeOf(@TypeOf(vertices_of_3D_box)), &vertices_of_3D_box, c.GL_STATIC_DRAW);
 
+    // configure vertex attributes
     map3dBoxVertexToAttribute();
     vertex = .{ .vbo = vbo, .vao = vao };
     return vao;
 }
 
 fn map3dBoxVertexToAttribute() void {
-    // layout(location = 4).in our vertex shader for our box3D attribute
+    // layout(location = 0).in our vertex shader for our box3D attribute
     const vertex_data_attribute_location = 0;
     // our in attribute data we have 3 values x,y,z for triangle coordinates and type  vec3
     const vertex_data_attribute_size = 3;
@@ -97,14 +98,18 @@ fn map3dBoxVertexToAttribute() void {
     const space_between_consecutive_vertex = (vertex_data_attribute_size + vertex_texture_coordinate_attribute_size) * size_of_single_data_in_vertex;
     //the offset of where the position begins in the buffer in our case the offset is at 0 the begining of the array buffer
     const data_start_offset = null; // @intToPtr(*c_void, 0);
+
+    // position attribute
     c.glVertexAttribPointer(vertex_data_attribute_location, vertex_data_attribute_size, vertex_data_type, normalize_vertex_data, space_between_consecutive_vertex, data_start_offset);
     c.glEnableVertexAttribArray(vertex_data_attribute_location);
 
     const vertex_texture_coordinate_attribute_location = 1;
     //This is to give the offset of the texture coordinates in the vertices_of_3D_box buffer.The texture coords
     //starts at the 3 position .NOTE: counting from 0 for arrays and each of this vertices have a size of size_of_single_data_in_vertex
-    //meaning for each vertex our texture coordinates data start from the 3rd data in the buffer .ie [0,1,2,3,4] color data start from 3 - 4 for each vertex
-    const texture_coordinate_start_offset = @intToPtr(*anyopaque, vertex_texture_coordinate_attribute_size * size_of_single_data_in_vertex);
+    //meaning for each vertex our texture coordinates data start from the 3rd data in the buffer .ie [0,1,2,3,4] color data start from 3 to 4 for each vertex
+    const texture_coordinate_start_offset = @intToPtr(*anyopaque, vertex_data_attribute_size * size_of_single_data_in_vertex);
+
+    // texture coord attribute
     c.glVertexAttribPointer(vertex_texture_coordinate_attribute_location, vertex_texture_coordinate_attribute_size, vertex_data_type, normalize_vertex_data, space_between_consecutive_vertex, texture_coordinate_start_offset);
     c.glEnableVertexAttribArray(vertex_texture_coordinate_attribute_location);
 }
@@ -125,9 +130,58 @@ pub fn rotate3dBox(shader_program: Shader) void {
     const aspect_ratio = perspective_width / perspective_height;
     const near_of_fustrum = 0.1;
     const far_of_fustrum = 100.0;
-    const projection = glm.perspective(45.0, aspect_ratio, near_of_fustrum, far_of_fustrum);
+    const projection = glm.perspective(glm.radian(45.0), aspect_ratio, near_of_fustrum, far_of_fustrum);
     //set uniforms in vertex shader
     shader_program.setUniform("model", Mat4, model);
     shader_program.setUniform("view", Mat4, view_backward);
     shader_program.setUniform("projection", Mat4, projection);
+    const vertex_data_start = 0;
+    const number_of_vertices_to_draw = 36;
+    c.glDrawArrays(c.GL_TRIANGLES, vertex_data_start, number_of_vertices_to_draw);
+}
+
+pub fn rotate10boxes(shader_program: Shader) void {
+    // world space positions of our cubes
+    const cubePositions = [10]glm.Vec3{
+        glm.vec3(0.0, 0.0, 0.0),
+        glm.vec3(2.0, 5.0, -15.0),
+        glm.vec3(-1.5, -2.2, -2.5),
+        glm.vec3(-3.8, -2.0, -12.3),
+        glm.vec3(2.4, -0.4, -3.5),
+        glm.vec3(-1.7, 3.0, -7.5),
+        glm.vec3(1.3, -2.0, -2.5),
+        glm.vec3(1.5, 2.0, -2.5),
+        glm.vec3(1.5, 0.2, -1.5),
+        glm.vec3(-1.3, 1.0, -1.5),
+    };
+
+    // create transformations
+    //move the world space backward into to the view space along the -z plane
+    const view_backward = glm.translation(vec3(0.0, 0.0, -3.0));
+    //project our view space to clip space along the 45* fov
+    const main = @import("main.zig");
+    const perspective_width = main.WIDTH;
+    const perspective_height = main.HEIGHT;
+    const aspect_ratio = perspective_width / perspective_height;
+    const near_of_fustrum = 0.1;
+    const far_of_fustrum = 100.0;
+    const projection = glm.perspective(glm.radian(45.0), aspect_ratio, near_of_fustrum, far_of_fustrum);
+
+    // pass transformation matrices to the shader
+    // note: currently we set the projection matrix each frame, but since the projection matrix
+    // rarely changes it's often best practice to set it outside the main loop only once.
+    shader_program.setUniform("projection", Mat4, projection);
+    shader_program.setUniform("view", Mat4, view_backward);
+
+    for (cubePositions) |cube, index| {
+        // calculate the model matrix for each object and pass it to shader before drawing
+        const model_translation = glm.translation(cube);
+        const angle = 20.0 * @intToFloat(f32, index);
+        const model_rotation = glm.rotation(glm.radian(angle), glm.vec3(1.0, 0.3, 0.5));
+        const model = model_translation.matmul(model_rotation);
+        shader_program.setUniform("model", Mat4, model);
+        const vertex_data_start = 0;
+        const number_of_vertices_to_draw = 36;
+        c.glDrawArrays(c.GL_TRIANGLES, vertex_data_start, number_of_vertices_to_draw);
+    }
 }
