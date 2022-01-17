@@ -16,8 +16,7 @@ pub fn genTextureFromImage(image_path: []const u8, image_color: c_uint) c_uint {
     // load and generate the texture
     const image = loadTextureImage(image_path);
     defer c.stbi_image_free(image.data);
-    //specifies the mipmap level for which we want to create a texture
-    //the base level is 0
+    //specifies the mipmap level for which we want to create a texture the base level is 0
     const mipmap_level = 0;
     //Third args specifies format to store the texture
     //7th & 8th  args specifies format and datatype of source image
@@ -47,15 +46,17 @@ fn loadTextureImage(image_path: []const u8) ImageInfo {
 }
 
 fn setTextureWrapping() void {
+    //this tells opengl what to do when texture coordinates are out of the (0,0) to (1,1) range
     //texture corodinates s,t,r maps to x,y,z in 3d space
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_S, c.GL_MIRRORED_REPEAT);
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_T, c.GL_MIRRORED_REPEAT);
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_S, c.GL_REPEAT);
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_T, c.GL_REPEAT);
 }
 
 fn setTextureZoomFiltering() void {
+    //this is important if you have a very large object and a low resolution texture
     //set filtering to use when texture is zoomed in or out.we can use a filtering
     //that works with mipmaps like c.GL_LINEAR_MIPMAP_NEAREST Note: mipmaps only
     //work for minimizing or downscaled textures
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_LINEAR_MIPMAP_LINEAR);
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_LINEAR);
 }
