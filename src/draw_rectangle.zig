@@ -128,6 +128,8 @@ pub fn setTransformation(shader_program: Shader) void {
     const rotation = glm.rotation(@floatCast(f32, c.glfwGetTime()), vec3(0.0, 0.0, 1.0));
     const transformation = translation.matmul(rotation);
     shader_program.setUniform("transformation", Mat4, transformation);
+    const number_of_indices_to_draw = 6;
+    c.glDrawElements(c.GL_TRIANGLES, number_of_indices_to_draw, c.GL_UNSIGNED_INT, null);
 }
 
 pub fn set3dTransformatin(shader_program: Shader) void {
@@ -146,4 +148,6 @@ pub fn set3dTransformatin(shader_program: Shader) void {
     shader_program.setUniform("model", Mat4, model);
     shader_program.setUniform("view", Mat4, view_backward);
     shader_program.setUniform("projection", Mat4, projection);
+    const number_of_indices_to_draw = 6;
+    c.glDrawElements(c.GL_TRIANGLES, number_of_indices_to_draw, c.GL_UNSIGNED_INT, null);
 }
