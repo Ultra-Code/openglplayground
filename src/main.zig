@@ -43,6 +43,8 @@ fn processUserInput(window: *c.GLFWwindow) void {
     if (c.glfwGetKey(window, c.GLFW_KEY_ESCAPE) == c.GLFW_PRESS) {
         c.glfwSetWindowShouldClose(window, c.GLFW_TRUE);
     }
+    const processCameraMovement = @import("draw_box.zig").processCameraMovement;
+    processCameraMovement(window);
 }
 
 const shader = @import("shader.zig").Shader;
