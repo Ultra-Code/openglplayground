@@ -118,7 +118,7 @@ pub const Shader = struct {
     ///uninforms are useful for setting attributes that might change on every frame
     ///or for interchanging data between your application and your shaders
     pub fn setUniform(self: Shader, name: [:0]const u8, comptime T: type, value: T) void {
-        if (T == bool or T == u8) {
+        if (T == u8) {
             c.glUniform1i(c.glGetUniformLocation(self.program_id, name), @intCast(c_int, value));
         } else if (T == f32) {
             c.glUniform1f(c.glGetUniformLocation(self.program_id, name), value);

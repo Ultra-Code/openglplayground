@@ -1,9 +1,12 @@
 const std = @import("std");
 const c = @import("cimports.zig");
+const Camera = @import("camera.zig").Camera;
 
-pub const WIDTH = 800;
-pub const HEIGHT = 600;
+// settings
+pub const WIDTH = 1920.0;
+pub const HEIGHT = 1080.0;
 
+pub var camera = Camera.default();
 fn setOpenglVersion() void {
     const major = 4;
     const minor = 6;
@@ -22,29 +25,80 @@ fn initializeWindow() *c.GLFWwindow {
         std.log.err("Failed to create a GLFW window \n", .{});
     }
     c.glfwMakeContextCurrent(window);
+
+    //tell GLFW that it should hide the cursor and capture it meaning
+    //once the application has focus, the mouse cursor stays within the center of the window
+    c.glfwSetInputMode(window, c.GLFW_CURSOR, c.GLFW_CURSOR_DISABLED);
+
     std.log.info("OpenGL {s}, GLSL {s}\n", .{ c.glGetString(c.GL_VERSION), c.glGetString(c.GL_SHADING_LANGUAGE_VERSION) });
 
     return window.?;
 }
 
+// c.glfw: whenever the window size changed (by OS or user resize) this callback function executes
 fn framebufferSizeCallback(
     _: ?*c.GLFWwindow, //window
     width: c_int,
     height: c_int,
 ) callconv(.C) void {
+    // make sure the viewport matches the new window dimensions; note that width and
+    // height will be significantly larger than specified on retina displays.
     c.glViewport(0, 0, width, height);
+}
+
+//initialize last cursor position to the center of the screen
+var last_x: f64 = WIDTH / 2.0;
+var last_y: f64 = HEIGHT / 2.0;
+
+// glfw: whenever the mouse moves, this callback is called
+pub fn mouseCallback(_: ?*c.GLFWwindow, xpos: f64, ypos: f64) callconv(.C) void {
+    const x_offset = xpos - last_x;
+    const y_offset = last_y - ypos; //reversed: y ranges is bottom to top
+
+    //update last_x and last_y
+    last_x = xpos;
+    last_y = ypos;
+    camera.cameraMovementWithMouse(@floatCast(f32, x_offset), @floatCast(f32, y_offset));
+}
+
+// glfw: whenever the mouse scroll wheel scrolls, this callback is called
+pub fn scrollCallback(_: ?*c.GLFWwindow, _: f64, yoffset: f64) callconv(.C) void {
+    camera.cameraZooming(@floatCast(f32, yoffset));
 }
 
 fn registerCallbackFunctions(window: *c.GLFWwindow) void {
     _ = c.glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+    _ = c.glfwSetCursorPosCallback(window, mouseCallback);
+    _ = c.glfwSetScrollCallback(window, scrollCallback);
 }
 
+//Balance out camera movement speed
+var last_frame_time: f32 = 0.0;
+var delta_time: f32 = 0.0;
+
+fn getDeltaTime() f32 {
+    const current_frame_time = @floatCast(f32, c.glfwGetTime());
+    //Time diff between current frame and last frame
+    //it balances out frame rate to velocity of camera .ie if the last frame took forever to render the delta_time
+    //value will increase we use this info to increase the velocity/speed of the camera to offset the previous lag
+    const delta = current_frame_time - last_frame_time;
+    last_frame_time = current_frame_time;
+    return delta;
+}
+
+// process all input: query c.GLFW whether relevant keys are pressed/released this frame and react accordingly
 fn processUserInput(window: *c.GLFWwindow) void {
     if (c.glfwGetKey(window, c.GLFW_KEY_ESCAPE) == c.GLFW_PRESS) {
         c.glfwSetWindowShouldClose(window, c.GLFW_TRUE);
     }
-    const processCameraMovement = @import("draw_box.zig").processCameraMovement;
-    processCameraMovement(window);
+    if (c.glfwGetKey(window, c.GLFW_KEY_W) == c.GLFW_PRESS)
+        camera.cameraMovementWithKeyboard(.Forward, delta_time);
+    if (c.glfwGetKey(window, c.GLFW_KEY_S) == c.GLFW_PRESS)
+        camera.cameraMovementWithKeyboard(.Backward, delta_time);
+    if (c.glfwGetKey(window, c.GLFW_KEY_A) == c.GLFW_PRESS)
+        camera.cameraMovementWithKeyboard(.Left, delta_time);
+    if (c.glfwGetKey(window, c.GLFW_KEY_D) == c.GLFW_PRESS)
+        camera.cameraMovementWithKeyboard(.Right, delta_time);
 }
 
 const shader = @import("shader.zig").Shader;
@@ -71,7 +125,7 @@ pub fn main() !void {
     const shader_program = try shader.init(allocator, "shaders/rectangle.vert", "shaders/rectangle.frag");
     defer c.glDeleteProgram(shader_program.program_id);
 
-    const vertex_vao = draw_box.store3dBoxOnGpu();
+    draw_box.store3dBoxOnGpu();
     defer draw_box.deinit3dBoxBuffers();
 
     // load and create a texture
@@ -87,6 +141,8 @@ pub fn main() !void {
 
     //render loop
     while (c.glfwWindowShouldClose(window) == c.GLFW_FALSE) {
+        //delta_time must be calculated per render loop
+        delta_time = getDeltaTime();
         // input
         processUserInput(window);
 
@@ -106,9 +162,9 @@ pub fn main() !void {
 
         //reactivate shader per each render call/frame because transformations modify uniforms in the vertex shader
         shader_program.useShader();
-        c.glBindVertexArray(vertex_vao);
         draw_box.rotate10boxes(shader_program);
 
+        // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         c.glfwSwapBuffers(window);
         c.glfwPollEvents();
     }
