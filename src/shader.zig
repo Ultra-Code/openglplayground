@@ -20,7 +20,7 @@ pub const Shader = struct {
 
     pub fn init(allocator: Allocator, vertex_path: []const u8, fragment_path: []const u8) !Shader {
         // 1. retrieve the vertex/fragment source code from filePath
-        const vertex_shader_file = try std.fs.cwd().openFile(vertex_path, .{ .read = true, .write = false });
+        const vertex_shader_file = try std.fs.cwd().openFile(vertex_path, .{ .mode = .read_only });
         defer vertex_shader_file.close();
 
         var vertex_source_buffer = try allocator.allocSentinel(u8, try vertex_shader_file.getEndPos(), '\x00');
@@ -28,7 +28,7 @@ pub const Shader = struct {
 
         _ = try vertex_shader_file.read(vertex_source_buffer);
 
-        const fragment_shader_file = try std.fs.cwd().openFile(fragment_path, .{ .read = true, .write = false });
+        const fragment_shader_file = try std.fs.cwd().openFile(fragment_path, .{ .mode = .read_only });
         defer fragment_shader_file.close();
 
         var fragment_source_buffer = try allocator.allocSentinel(u8, try fragment_shader_file.getEndPos(), '\x00');
@@ -117,7 +117,7 @@ pub const Shader = struct {
 
     ///uninforms are useful for setting attributes that might change on every frame
     ///or for interchanging data between your application and your shaders
-    pub fn setUniform(self: Shader, name: [:0]const u8, comptime T: type, value: T) void {
+    pub fn setUniform(self: Shader, name: [*]const u8, comptime T: type, value: T) void {
         if (T == u8) {
             c.glUniform1i(c.glGetUniformLocation(self.program_id, name), @intCast(c_int, value));
         } else if (T == f32) {
