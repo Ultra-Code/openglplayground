@@ -176,7 +176,7 @@ pub fn rotate10boxes(shader_program: Shader) void {
     shader_program.setUniform("view", Mat4, view_around);
     // render boxes
     c.glBindVertexArray(vertex.vao);
-    for (cubePositions) |cube, index| {
+    for (cubePositions, 0..) |cube, index| {
         // calculate the model matrix for each object and pass it to shader before drawing
         const model_translation = glm.translation(cube);
         const angle = 20.0 * @intToFloat(f32, index);

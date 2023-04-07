@@ -9,21 +9,24 @@ pub fn build(b: *std.build.Builder) void {
 
     // Standard release options allow the person running `zig build` to select
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
-    const mode = b.standardReleaseOptions();
+    const optimize = b.standardOptimizeOption(.{});
 
-    const exe = b.addExecutable("opengl", "src/main.zig");
-    exe.setTarget(target);
-    exe.setBuildMode(mode);
+    const exe = b.addExecutable(.{
+        .name = "opengl",
+        .root_source_file = .{ .path = "src/main.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
 
-    exe.addIncludeDir("/usr/include/GLFW/");
-    exe.addIncludeDir("/usr/include/epoxy/");
-    exe.addLibPath("/usr/lib/");
+    exe.addIncludePath("/usr/include/GLFW/");
+    exe.addIncludePath("/usr/include/epoxy/");
+    exe.addLibraryPath("/usr/lib/");
     exe.linkSystemLibrary("glfw3");
     exe.linkSystemLibrary("dl");
     exe.linkSystemLibrary("epoxy");
 
-    exe.addIncludeDir("deps/include/");
-    exe.addCSourceFile("deps/src/stb_image.c", &[_][]const u8{"-std=c17"});
+    exe.addIncludePath("deps/include/");
+    exe.addCSourceFile("deps/src/stb_image.c", &[_][]const u8{"-std=c2x"});
 
     exe.install();
 

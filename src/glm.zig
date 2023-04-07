@@ -98,7 +98,7 @@ fn Vector(comptime d: usize) type {
         pub fn normalize(self: Self) Self {
             const n = self.norm();
             var vals = self.vals;
-            for (vals) |*val| {
+            for (&vals) |*val| {
                 val.* /= n;
             }
             return Self{ .vals = vals };
@@ -321,5 +321,5 @@ pub fn ortho(left: f32, right: f32, bottom: f32, top: f32, znear: f32, zfar: f32
 }
 
 pub fn radian(angle: f32) f32 {
-    return (angle / 180) * std.math.pi;
+    return std.math.degreesToRadians(f32,angle);
 }
